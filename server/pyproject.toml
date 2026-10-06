@@ -12,6 +12,7 @@ dependencies = [
     "jinja2>=3.1",
     "python-multipart>=0.0.9",
     "itsdangerous>=2.1",
+    "alembic>=1.13",
 ]
 
 [project.optional-dependencies]
@@ -25,6 +26,7 @@ build-backend = "setuptools.build_meta"
 packages = ["app", "app.api", "app.web"]
 
 [tool.setuptools.package-data]
+"app" = ["migrations/*.py", "migrations/*.mako", "migrations/versions/*.py"]
 "app.web" = ["templates/*.html", "static/*"]
 
 [tool.pytest.ini_options]

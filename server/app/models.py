@@ -5,6 +5,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Index,
+    MetaData,
     String,
     Text,
     TypeDecorator,
@@ -31,7 +32,16 @@ class UTCDateTime(TypeDecorator):
 
 
 class Base(DeclarativeBase):
-    pass
+    # Explicit constraint names, so migrations can alter them (SQLite batch mode needs names).
+    metadata = MetaData(
+        naming_convention={
+            "ix": "ix_%(column_0_label)s",
+            "uq": "uq_%(table_name)s_%(column_0_name)s",
+            "ck": "ck_%(table_name)s_%(constraint_name)s",
+            "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
+            "pk": "pk_%(table_name)s",
+        }
+    )
 
 
 class SyncState(Base):
@@ -46,7 +56,7 @@ class SyncState(Base):
 class Product(Base):
     __tablename__ = "products"
     __table_args__ = (
-        CheckConstraint("rating IS NULL OR rating BETWEEN 1 AND 5", name="ck_rating_range"),
+        CheckConstraint("rating IS NULL OR rating BETWEEN 1 AND 5", name="rating_range"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)

@@ -9,7 +9,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.api import products, sync
 from app.config import Settings
-from app.db import init_db, make_engine
+from app.db import make_engine, migrate
 from app.web import routes as web
 from app.web.session import LoginRequired
 
@@ -20,7 +20,7 @@ SESSION_MAX_AGE = 60 * 60 * 24 * 30
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings()
     engine = make_engine(settings.database_url)
-    init_db(engine)
+    migrate(engine)
 
     app = FastAPI(title="shoppingBuddy", version=VERSION)
     app.state.settings = settings

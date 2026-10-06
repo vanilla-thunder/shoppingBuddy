@@ -50,6 +50,21 @@ CDN needed). Pages:
 The login is a signed session cookie (30 days, SameSite=Lax), with an Origin check on form posts.
 Its key is derived from `SB_API_TOKEN`, so rotating the token logs out every browser.
 
+## Schema changes
+
+After changing `app/models.py`, generate a migration and review it before committing:
+
+```bash
+.venv/bin/alembic revision --autogenerate -m "add xyz to products"
+```
+
+Autogenerate needs a database at the current head (`alembic upgrade head` creates or upgrades it).
+`tests/test_migrations.py` fails if models and migrations drift apart. Migrations use SQLite batch
+mode, so column changes work on SQLite too.
+
+Other commands: `alembic upgrade head`, `alembic downgrade -1`, `alembic current`. They read
+`SB_DATABASE_URL` like the app, and no token is needed.
+
 ## API overview
 
 | Method & path                         | Purpose                                   |
@@ -68,6 +83,6 @@ The JSON API takes `Authorization: Bearer <token>`. The web UI uses its session 
 
 ## Notes
 
-- Tables are created at startup with `create_all`. Alembic migrations should be added before the
-  first production deploy, so schema changes don't need a database reset.
+- The schema is managed by Alembic (`app/migrations/`). The server upgrades the database to the
+  newest migration on every start.
 - With SQLite, run a single uvicorn worker. Concurrent writers can hit `database is locked`.

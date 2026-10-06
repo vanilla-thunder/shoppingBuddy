@@ -5,11 +5,16 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="SB_", env_file=".env")
+class DatabaseSettings(BaseSettings):
+    """The part of the configuration that migrations need; no token required."""
 
-    api_token: str = Field(min_length=16)
+    model_config = SettingsConfigDict(env_prefix="SB_", env_file=".env", extra="ignore")
+
     database_url: str = "sqlite:///./shoppingbuddy.db"
+
+
+class Settings(DatabaseSettings):
+    api_token: str = Field(min_length=16)
     # Mark the web session cookie Secure; enable when served over HTTPS.
     secure_cookies: bool = False
 
