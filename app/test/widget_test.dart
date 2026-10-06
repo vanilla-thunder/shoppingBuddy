@@ -6,27 +6,41 @@ import 'package:shopping_buddy/src/app_scope.dart';
 import 'package:shopping_buddy/src/data/database.dart';
 import 'package:shopping_buddy/src/data/repository.dart';
 import 'package:shopping_buddy/src/domain/identifiers.dart';
+import 'package:shopping_buddy/src/product_info.dart';
 import 'package:shopping_buddy/src/ui/products_screen.dart';
 import 'package:shopping_buddy/src/ui/scan_screen.dart';
 
 const milkCode = '4006381333931';
 
+class FakeProductInfo implements ProductInfoLookup {
+  final known = <String, ProductInfo>{};
+  final asked = <String>[];
+
+  @override
+  Future<ProductInfo?> lookup(String gtin) async {
+    asked.add(gtin);
+    return known[gtin];
+  }
+}
+
 void main() {
   late AppDatabase db;
   late ProductRepository repo;
   late CategoryFilter filter;
+  late FakeProductInfo productInfo;
   late void Function(String raw, {bool isUpcE}) scan;
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
     repo = ProductRepository(db);
     filter = await CategoryFilter.load(repo);
+    productInfo = FakeProductInfo();
   });
 
   tearDown(() => db.close());
 
   Future<void> pumpApp(WidgetTester tester, Widget home) async {
-    await tester.pumpWidget(AppScope(repo: repo, categoryFilter: filter, child: ShoppingBuddyApp(home: home)));
+    await tester.pumpWidget(AppScope(repo: repo, categoryFilter: filter, productInfo: productInfo, child: ShoppingBuddyApp(home: home)));
     await tester.pumpAndSettle();
   }
 
@@ -89,6 +103,20 @@ void main() {
     final product = await tester.runAsync(() => repo.lookup(normalizeGtin(milkCode)));
     expect(product!.row.rating, 4);
     expect(product.row.dirty, isTrue);
+    await unmount(tester);
+  });
+
+  testWidgets('unknown barcode: name and brand are prefilled from Open Food Facts', (tester) async {
+    productInfo.known[normalizeGtin(milkCode).value] = const ProductInfo(name: 'Frische Vollmilch', brand: 'Weihenstephan');
+    await pumpApp(tester, ScanScreen(cameraBuilder: fakeCamera));
+    await scanCode(tester, milkCode);
+    await tester.tap(find.text('Add product'));
+    await tester.pumpAndSettle();
+
+    expect(productInfo.asked, [normalizeGtin(milkCode).value]);
+    expect(find.widgetWithText(TextFormField, 'Frische Vollmilch'), findsOneWidget);
+    expect(find.widgetWithText(TextFormField, 'Weihenstephan'), findsOneWidget);
+    expect(find.text('From Open Food Facts, please check'), findsOneWidget);
     await unmount(tester);
   });
 

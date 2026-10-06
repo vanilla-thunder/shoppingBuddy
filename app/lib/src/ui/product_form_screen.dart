@@ -27,6 +27,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   int? _rating;
   Product? _product;
   bool _loading = true;
+  bool _lookingUp = false;
+  bool _prefilled = false;
 
   bool get _isNew => widget.productId == null;
 
@@ -41,6 +43,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     if (_isNew) {
       _category.text = scope.categoryFilter.forNewProducts;
       _gtin.text = widget.initialGtin == null ? '' : displayGtin(widget.initialGtin!);
+      if (widget.initialGtin != null) _prefill(widget.initialGtin!);
     } else {
       final product = await scope.repo.getProduct(widget.productId!);
       if (product != null) {
@@ -53,6 +56,20 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       }
     }
     if (mounted) setState(() => _loading = false);
+  }
+
+  /// Fills name and brand from Open Food Facts, but never overwrites what the user typed.
+  Future<void> _prefill(String gtin) async {
+    _lookingUp = true; // runs from _load, before the first build: no setState needed
+    final info = await AppScope.of(context).productInfo.lookup(gtin);
+    if (!mounted) return;
+    setState(() {
+      _lookingUp = false;
+      if (info == null || _name.text.trim().isNotEmpty) return;
+      _name.text = info.name;
+      if (_brand.text.trim().isEmpty) _brand.text = info.brand ?? '';
+      _prefilled = true;
+    });
   }
 
   @override
@@ -176,7 +193,18 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                         controller: _name,
                         autofocus: _isNew,
                         textCapitalization: TextCapitalization.sentences,
-                        decoration: const InputDecoration(labelText: 'Name'),
+                        decoration: InputDecoration(
+                          labelText: 'Name',
+                          helperText: _lookingUp
+                              ? 'Looking up Open Food Facts…'
+                              : (_prefilled ? 'From Open Food Facts, please check' : null),
+                          suffixIcon: _lookingUp
+                              ? const Padding(
+                                  padding: EdgeInsets.all(14),
+                                  child: SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                                )
+                              : null,
+                        ),
                         validator: (v) => (v == null || v.trim().isEmpty) ? 'Name is required' : null,
                       ),
                       const SizedBox(height: 12),

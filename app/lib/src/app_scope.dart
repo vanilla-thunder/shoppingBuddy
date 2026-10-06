@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import 'data/repository.dart';
 import 'domain/categories.dart';
+import 'product_info.dart';
 
 /// The category the lists are filtered by; null means all. Persisted across app starts.
 class CategoryFilter extends ValueNotifier<String?> {
@@ -27,10 +28,17 @@ class CategoryFilter extends ValueNotifier<String?> {
 }
 
 class AppScope extends InheritedWidget {
-  const AppScope({super.key, required this.repo, required this.categoryFilter, required super.child});
+  const AppScope({
+    super.key,
+    required this.repo,
+    required this.categoryFilter,
+    required this.productInfo,
+    required super.child,
+  });
 
   final ProductRepository repo;
   final CategoryFilter categoryFilter;
+  final ProductInfoLookup productInfo;
 
   static AppScope of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<AppScope>();
@@ -40,5 +48,5 @@ class AppScope extends InheritedWidget {
 
   @override
   bool updateShouldNotify(AppScope oldWidget) =>
-      repo != oldWidget.repo || categoryFilter != oldWidget.categoryFilter;
+      repo != oldWidget.repo || categoryFilter != oldWidget.categoryFilter || productInfo != oldWidget.productInfo;
 }

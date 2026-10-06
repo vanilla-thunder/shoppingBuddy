@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Open Food Facts lookup and (later) sync with the server. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="shopping_buddy"
         android:name="${applicationName}"

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'src/app_scope.dart';
 import 'src/data/database.dart';
 import 'src/data/repository.dart';
+import 'src/product_info.dart';
 import 'src/ui/products_screen.dart';
 import 'src/ui/scan_screen.dart';
 
@@ -10,7 +11,12 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final repo = ProductRepository(AppDatabase());
   final categoryFilter = await CategoryFilter.load(repo);
-  runApp(AppScope(repo: repo, categoryFilter: categoryFilter, child: const ShoppingBuddyApp()));
+  runApp(AppScope(
+    repo: repo,
+    categoryFilter: categoryFilter,
+    productInfo: OpenFoodFactsLookup(),
+    child: const ShoppingBuddyApp(),
+  ));
 }
 
 class ShoppingBuddyApp extends StatelessWidget {
