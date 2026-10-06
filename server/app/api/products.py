@@ -4,9 +4,11 @@ from sqlalchemy.orm import Session
 
 from app import catalog
 from app.auth import require_token
+from app.categories import normalize_category
 from app.db import get_db
 from app.models import Product
 from app.schemas import (
+    CategoryOut,
     IdentifierFields,
     IdentifierOut,
     IdentifierType,
@@ -25,6 +27,7 @@ def product_out(product: Product) -> ProductOut:
         brand=product.brand,
         rating=product.rating,
         notes=product.notes,
+        category=product.category,
         created_at=product.created_at,
         updated_at=product.updated_at,
         identifiers=[IdentifierOut.model_validate(i) for i in product.identifiers if not i.deleted],
@@ -48,11 +51,22 @@ def _conflict(exc: catalog.IdentifierTaken) -> HTTPException:
 @router.get("/products", response_model=list[ProductOut])
 def list_products(
     q: str | None = None,
+    category: str | None = Query(None, description="'local' or a website domain; omit for all"),
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
 ):
-    return [product_out(p) for p in catalog.search_products(db, q, limit, offset)]
+    if category is not None:
+        try:
+            category = normalize_category(category)
+        except ValueError as exc:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc))
+    return [product_out(p) for p in catalog.search_products(db, q, limit, offset, category)]
+
+
+@router.get("/categories", response_model=list[CategoryOut])
+def list_categories(db: Session = Depends(get_db)):
+    return [CategoryOut(category=c, count=n) for c, n in catalog.list_categories(db)]
 
 
 @router.post("/products", response_model=ProductOut, status_code=status.HTTP_201_CREATED)

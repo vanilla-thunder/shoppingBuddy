@@ -2,6 +2,7 @@
   <div class="product-main">
     <a class="product-name" href="/products/{{ p.id }}">{{ p.name }}</a>
     {% if p.brand %}<span class="muted">{{ p.brand }}</span>{% endif %}
+    {% if p.category != category and p.category != 'local' %}<span class="tag">{{ p.category }}</span>{% endif %}
     <div class="codes">{% for i in p.identifiers if not i.deleted %}<code>{{ i|code }}</code>{% endfor %}</div>
   </div>
   <div class="stars" role="group" aria-label="Rating">

@@ -5,14 +5,14 @@
 {% if not products and offset == 0 %}
 <div class="empty">
   {% if q %}
-  <p>Nothing found for “{{ q }}”.</p>
+  <p>Nothing found for “{{ q }}”{% if category %} in {{ category }}{% endif %}.</p>
   {% if barcode_query %}
   <a class="button" href="/products/new?{{ {'gtin': q}|urlencode }}">Add product with barcode {{ q }}</a>
   {% else %}
   <a class="button" href="/products/new?{{ {'name': q}|urlencode }}">Add “{{ q }}”</a>
   {% endif %}
   {% else %}
-  <p>No products yet.</p>
+  <p>No products{% if category %} in {{ category }}{% endif %} yet.</p>
   <a class="button" href="/products/new">Add your first product</a>
   {% endif %}
 </div>

@@ -1,8 +1,9 @@
 from typing import Literal
 from uuid import UUID
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from app.categories import LOCAL, normalize_category
 from app.identifiers import normalize_identifier
 
 IdentifierType = Literal["gtin", "store_article"]
@@ -29,6 +30,12 @@ class ProductFields(_In):
     brand: str | None = Field(None, max_length=200)
     rating: int | None = Field(None, ge=1, le=5)
     notes: str | None = Field(None, max_length=2000)
+    category: str = LOCAL
+
+    @field_validator("category")
+    @classmethod
+    def _normalize_category(cls, value: str) -> str:
+        return normalize_category(value)
 
 
 # --- web/CRUD API ---
@@ -45,11 +52,18 @@ class ProductUpdate(_In):
     brand: str | None = Field(None, max_length=200)
     rating: int | None = Field(None, ge=1, le=5)
     notes: str | None = Field(None, max_length=2000)
+    category: str | None = None
+
+    @field_validator("category")
+    @classmethod
+    def _normalize_category(cls, value: str | None) -> str | None:
+        return normalize_category(value) if value is not None else None
 
     @model_validator(mode="after")
-    def _name_not_null(self):
-        if "name" in self.model_fields_set and self.name is None:
-            raise ValueError("name cannot be null")
+    def _required_not_null(self):
+        for field in ("name", "category"):
+            if field in self.model_fields_set and getattr(self, field) is None:
+                raise ValueError(f"{field} cannot be null")
         return self
 
 
@@ -68,9 +82,15 @@ class ProductOut(BaseModel):
     brand: str | None
     rating: int | None
     notes: str | None
+    category: str
     created_at: AwareDatetime
     updated_at: AwareDatetime
     identifiers: list[IdentifierOut]
+
+
+class CategoryOut(BaseModel):
+    category: str
+    count: int
 
 
 # --- sync API ---
@@ -99,6 +119,7 @@ class ProductSyncOut(BaseModel):
     brand: str | None
     rating: int | None
     notes: str | None
+    category: str
     created_at: AwareDatetime
     updated_at: AwareDatetime
     deleted: bool

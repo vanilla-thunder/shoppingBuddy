@@ -138,7 +138,7 @@ def test_delete_product(web, client):
 def test_csv_export_import_roundtrip(web, client):
     add(web, name="Milk, 3.5%", rating="4", gtin=EAN13, store="Aldi", article="4711")
     csv_text = web.get("/export.csv").content.decode("utf-8-sig")
-    assert csv_text.splitlines()[0] == "id,name,brand,rating,notes,gtins,store_articles"
+    assert csv_text.splitlines()[0] == "id,name,brand,category,rating,notes,gtins,store_articles"
     assert '"Milk, 3.5%"' in csv_text and "aldi=4711" in csv_text
 
     # Re-importing the export changes nothing.

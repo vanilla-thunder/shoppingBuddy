@@ -9,6 +9,7 @@ from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from app import catalog
+from app.categories import LOCAL, normalize_category
 from app.db import get_db
 from app.identifiers import GTIN_LENGTHS
 from app.models import Product
@@ -48,7 +49,10 @@ def see_other(url: str) -> RedirectResponse:
 
 
 def error_messages(exc: ValidationError) -> list[str]:
-    labels = {"name": "Name", "brand": "Brand", "rating": "Rating", "notes": "Notes", "identifiers": "Identifier"}
+    labels = {
+        "name": "Name", "brand": "Brand", "category": "Category", "rating": "Rating",
+        "notes": "Notes", "identifiers": "Identifier",
+    }
     messages = []
     for err in exc.errors():
         field = next((str(part) for part in err["loc"] if isinstance(part, str)), "")
@@ -68,6 +72,27 @@ def looks_like_gtin(text: str) -> bool:
 
 def _optional(text: str) -> str | None:
     return text.strip() or None
+
+
+def render_form(request: Request, db: Session, status_code: int = 200, **context) -> HTMLResponse:
+    """Product form page; offers the categories in use as suggestions."""
+    names = [c for c, _ in catalog.list_categories(db)]
+    return render(request, "form.html", status_code, categories=names, **context)
+
+
+def current_category(request: Request, c: str | None) -> str | None:
+    """The list filter: `c` when given ("" = all), else the last choice stored in the session."""
+    if c is None:
+        return request.session.get("category")
+    try:
+        category = normalize_category(c) if c.strip() else None
+    except ValueError:
+        category = None
+    if category is None:
+        request.session.pop("category", None)
+    else:
+        request.session["category"] = category
+    return category
 
 
 # --- login ---
@@ -98,10 +123,11 @@ def logout(request: Request):
 # --- list & search ---
 
 
-def _rows_context(db: Session, q: str, offset: int) -> dict:
-    products = catalog.search_products(db, q, PAGE_SIZE + 1, offset)
+def _rows_context(db: Session, q: str, offset: int, category: str | None) -> dict:
+    products = catalog.search_products(db, q, PAGE_SIZE + 1, offset, category)
     return {
         "q": q,
+        "category": category,
         "products": products[:PAGE_SIZE],
         "next_offset": offset + PAGE_SIZE if len(products) > PAGE_SIZE else None,
         "offset": offset,
@@ -110,15 +136,20 @@ def _rows_context(db: Session, q: str, offset: int) -> dict:
 
 
 @router.get("/")
-def index(request: Request, q: str = "", db: Session = Depends(get_db)):
-    return render(request, "index.html", **_rows_context(db, q, 0))
+def index(request: Request, q: str = "", c: str | None = None, db: Session = Depends(get_db)):
+    category = current_category(request, c)
+    return render(
+        request, "index.html", categories=catalog.list_categories(db), **_rows_context(db, q, 0, category)
+    )
 
 
 @router.get("/products/rows")
-def rows(request: Request, q: str = "", offset: int = 0, db: Session = Depends(get_db)):
-    response = render(request, "_rows.html", **_rows_context(db, q, max(offset, 0)))
+def rows(request: Request, q: str = "", c: str | None = None, offset: int = 0, db: Session = Depends(get_db)):
+    category = current_category(request, c)
+    response = render(request, "_rows.html", **_rows_context(db, q, max(offset, 0), category))
     if offset == 0:
-        response.headers["HX-Replace-Url"] = "/?" + urlencode({"q": q}) if q else "/"
+        params = {k: v for k, v in (("q", q), ("c", category)) if v}
+        response.headers["HX-Replace-Url"] = "/?" + urlencode(params) if params else "/"
     return response
 
 
@@ -135,7 +166,7 @@ def set_rating(request: Request, product_id: str, rating: int = Form(...), db: S
         return Response(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT)
     catalog.update_product(db, product, update)
     db.commit()
-    return render(request, "_row.html", p=product)
+    return render(request, "_row.html", p=product, category=request.session.get("category"))
 
 
 def _product_or_none(db: Session, product_id: str) -> Product | None:
@@ -149,9 +180,12 @@ def _product_or_none(db: Session, product_id: str) -> Product | None:
 
 
 @router.get("/products/new")
-def new_product(request: Request, gtin: str = "", name: str = ""):
-    form = {"name": name, "brand": "", "rating": "", "notes": "", "gtin": gtin, "store": "", "article": ""}
-    return render(request, "form.html", product=None, form=form, errors=[])
+def new_product(request: Request, gtin: str = "", name: str = "", db: Session = Depends(get_db)):
+    form = {
+        "name": name, "brand": "", "category": request.session.get("category") or LOCAL,
+        "rating": "", "notes": "", "gtin": gtin, "store": "", "article": "",
+    }
+    return render_form(request, db, product=None, form=form, errors=[])
 
 
 @router.post("/products/new")
@@ -159,6 +193,7 @@ def create_product(
     request: Request,
     name: str = Form(""),
     brand: str = Form(""),
+    category: str = Form(""),
     rating: str = Form(""),
     notes: str = Form(""),
     gtin: str = Form(""),
@@ -166,7 +201,10 @@ def create_product(
     article: str = Form(""),
     db: Session = Depends(get_db),
 ):
-    form = {"name": name, "brand": brand, "rating": rating, "notes": notes, "gtin": gtin, "store": store, "article": article}
+    form = {
+        "name": name, "brand": brand, "category": category, "rating": rating, "notes": notes,
+        "gtin": gtin, "store": store, "article": article,
+    }
     identifiers = []
     if gtin.strip():
         identifiers.append({"type": "gtin", "value": gtin})
@@ -174,14 +212,15 @@ def create_product(
         identifiers.append({"type": "store_article", "value": article, "store": store})
     try:
         data = ProductCreate(
-            name=name, brand=_optional(brand), rating=_optional(rating), notes=_optional(notes), identifiers=identifiers
+            name=name, brand=_optional(brand), category=category.strip() or LOCAL,
+            rating=_optional(rating), notes=_optional(notes), identifiers=identifiers,
         )
         product = catalog.create_product(db, data)
     except ValidationError as exc:
-        return render(request, "form.html", 422, product=None, form=form, errors=error_messages(exc))
+        return render_form(request, db, 422, product=None, form=form, errors=error_messages(exc))
     except catalog.IdentifierTaken as exc:
-        return render(
-            request, "form.html", 409, product=None, form=form, errors=[taken_message(exc)], taken_id=exc.product_id
+        return render_form(
+            request, db, 409, product=None, form=form, errors=[taken_message(exc)], taken_id=exc.product_id
         )
     db.commit()
     return see_other(f"/?{urlencode({'q': product.name})}")
@@ -194,6 +233,7 @@ def _edit_form(product: Product) -> dict:
     return {
         "name": product.name,
         "brand": product.brand or "",
+        "category": product.category,
         "rating": str(product.rating or ""),
         "notes": product.notes or "",
     }
@@ -204,7 +244,7 @@ def edit_product(request: Request, product_id: str, db: Session = Depends(get_db
     product = _product_or_none(db, product_id)
     if product is None:
         return render(request, "not_found.html", 404)
-    return render(request, "form.html", product=product, form=_edit_form(product), errors=[])
+    return render_form(request, db, product=product, form=_edit_form(product), errors=[])
 
 
 @router.post("/products/{product_id}")
@@ -213,6 +253,7 @@ def save_product(
     product_id: str,
     name: str = Form(""),
     brand: str = Form(""),
+    category: str = Form(""),
     rating: str = Form(""),
     notes: str = Form(""),
     db: Session = Depends(get_db),
@@ -220,11 +261,14 @@ def save_product(
     product = _product_or_none(db, product_id)
     if product is None:
         return render(request, "not_found.html", 404)
-    form = {"name": name, "brand": brand, "rating": rating, "notes": notes}
+    form = {"name": name, "brand": brand, "category": category, "rating": rating, "notes": notes}
     try:
-        data = ProductUpdate(name=name, brand=_optional(brand), rating=_optional(rating), notes=_optional(notes))
+        data = ProductUpdate(
+            name=name, brand=_optional(brand), category=category.strip() or LOCAL,
+            rating=_optional(rating), notes=_optional(notes),
+        )
     except ValidationError as exc:
-        return render(request, "form.html", 422, product=product, form=form, errors=error_messages(exc))
+        return render_form(request, db, 422, product=product, form=form, errors=error_messages(exc))
     catalog.update_product(db, product, data)
     db.commit()
     return see_other(f"/?{urlencode({'q': product.name})}")
@@ -256,13 +300,13 @@ def add_identifier(
         ident = IdentifierFields(type=type, value=value, store=store)
         catalog.add_identifier(db, product, ident)
     except ValidationError as exc:
-        return render(
-            request, "form.html", 422, product=product, form=_edit_form(product),
+        return render_form(
+            request, db, 422, product=product, form=_edit_form(product),
             errors=error_messages(exc), ident_form=ident_form,
         )
     except catalog.IdentifierTaken as exc:
-        return render(
-            request, "form.html", 409, product=product, form=_edit_form(product),
+        return render_form(
+            request, db, 409, product=product, form=_edit_form(product),
             errors=[taken_message(exc)], taken_id=exc.product_id, ident_form=ident_form,
         )
     db.commit()

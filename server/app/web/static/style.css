@@ -97,8 +97,14 @@ legend { font-weight: 600; font-size: 0.95rem; padding: 0; }
 .errors ul { margin: 0; padding-left: 18px; }
 
 /* search + list */
-.search { margin-bottom: 12px; }
-.search input { padding: 12px 14px; font-size: 1.05rem; }
+.search { display: flex; gap: 8px; margin-bottom: 12px; }
+.search input, .search select { padding: 12px 14px; font-size: 1.05rem; }
+.search select { flex: 0 1 auto; width: auto; max-width: 45%; }
+.tag {
+  display: inline-block; padding: 1px 8px; margin-right: 6px; border-radius: 999px;
+  font-size: 0.8rem; color: var(--accent); border: 1px solid var(--accent);
+}
+.hint { display: block; margin-top: 4px; font-weight: normal; font-size: 0.85rem; color: var(--muted); }
 .product {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);

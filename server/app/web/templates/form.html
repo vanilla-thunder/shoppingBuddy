@@ -14,6 +14,14 @@
     <input name="name" value="{{ form.name }}" required maxlength="300" {% if not product %}autofocus{% endif %}>
   </label>
   <label>Brand <input name="brand" value="{{ form.brand }}" maxlength="200"></label>
+  <label>Category
+    <input name="category" value="{{ form.category }}" list="category-list" maxlength="100" autocomplete="off">
+    <small class="hint">“local” for things bought in a shop, or the website, e.g. lieferando.de</small>
+  </label>
+  <datalist id="category-list">
+    {% for c in categories|default([]) %}<option value="{{ c }}">{% endfor %}
+    {% if 'local' not in categories|default([]) %}<option value="local">{% endif %}
+  </datalist>
   <fieldset>
     <legend>Rating</legend>
     <div class="star-radios">

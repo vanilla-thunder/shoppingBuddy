@@ -1,6 +1,7 @@
 """CSV export/import of the product list.
 
-Columns: id, name, brand, rating, notes, gtins, store_articles
+Columns: id, name, brand, category, rating, notes, gtins, store_articles
+  category        "local" (default) or a website domain such as lieferando.de
   gtins           barcodes separated by ";"
   store_articles  "store=article" pairs separated by ";"
 Only `name` is required on import; header names are case-insensitive.
@@ -18,9 +19,9 @@ from app import catalog
 from app.models import Product
 from app.schemas import IdentifierFields, ProductCreate, ProductUpdate
 
-COLUMNS = ["id", "name", "brand", "rating", "notes", "gtins", "store_articles"]
+COLUMNS = ["id", "name", "brand", "category", "rating", "notes", "gtins", "store_articles"]
 HEADER_ALIASES = {"gtin": "gtins", "ean": "gtins", "eans": "gtins", "barcode": "gtins"}
-EDITABLE = ("name", "brand", "rating", "notes")
+EDITABLE = ("name", "brand", "category", "rating", "notes")
 
 
 def export_csv(db: Session) -> str:
@@ -40,6 +41,7 @@ def export_csv(db: Session) -> str:
                 p.id,
                 p.name,
                 p.brand or "",
+                p.category,
                 p.rating or "",
                 p.notes or "",
                 ";".join(i.value for i in live if i.type == "gtin"),

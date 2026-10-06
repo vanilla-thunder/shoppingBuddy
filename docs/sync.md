@@ -9,7 +9,7 @@ All requests need `Authorization: Bearer <token>`.
 
 Two tables, identical on server and client:
 
-- **products**: `id`, `name`, `brand`, `rating` (1–5 or null), `notes`, `created_at`,
+- **products**: `id`, `name`, `brand`, `category`, `rating` (1–5 or null), `notes`, `created_at`,
   `updated_at`, `deleted`, `merged_into`, `server_seq`
 - **identifiers**: `id`, `product_id`, `type` (`gtin` | `store_article`), `value`, `store`,
   `created_at`, `updated_at`, `deleted`, `server_seq`
@@ -31,6 +31,18 @@ Rules:
 - Leading and trailing whitespace is stripped from all fields.
 
 A live `(type, value, store)` combination is unique. Deleted identifiers don't count.
+
+### Categories
+
+`category` says where you get the product. It is `local` for things bought in a shop, or the
+website domain for online orders, e.g. `lieferando.de`. It defaults to `local`, so a push without
+the field (from an older client) stores `local`. Normalization, which clients must apply as well:
+lowercase, trim whitespace, reduce a URL to its host, drop the `www.` prefix and any port
+(`https://www.Lieferando.de/menu/x` → `lieferando.de`).
+
+Sync always transfers **every** category. Clients filter locally: the phone app defaults to
+`local`, so a scan in the supermarket only matches groceries, and you can switch categories while
+offline.
 
 ## Push: `POST /sync/push`
 

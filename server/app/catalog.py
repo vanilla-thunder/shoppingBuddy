@@ -5,9 +5,10 @@ Callers commit; these functions only stage changes on the session.
 
 from uuid import uuid4
 
-from sqlalchemy import or_, select
+from sqlalchemy import case, func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
+from app.categories import LOCAL
 from app.models import Identifier, Product
 from app.schemas import IdentifierFields, ProductCreate, ProductUpdate
 from app.services import fresh_timestamp, find_live_identifier, next_seq, tombstone_identifiers, touch, utcnow
@@ -32,7 +33,10 @@ def _escape_like(text: str) -> str:
     return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
-def search_products(db: Session, q: str | None, limit: int, offset: int = 0) -> list[Product]:
+def search_products(
+    db: Session, q: str | None, limit: int, offset: int = 0, category: str | None = None
+) -> list[Product]:
+    """Search live products; `category` (already normalized) restricts to one category."""
     query = (
         select(Product)
         .where(Product.deleted.is_(False))
@@ -41,6 +45,8 @@ def search_products(db: Session, q: str | None, limit: int, offset: int = 0) -> 
         .limit(limit)
         .offset(offset)
     )
+    if category is not None:
+        query = query.where(Product.category == category)
     if q and q.strip():
         pattern = f"%{_escape_like(q.strip())}%"
         matching_ids = select(Identifier.product_id).where(
@@ -54,6 +60,17 @@ def search_products(db: Session, q: str | None, limit: int, offset: int = 0) -> 
             )
         )
     return list(db.scalars(query))
+
+
+def list_categories(db: Session) -> list[tuple[str, int]]:
+    """Categories in use with their live product counts, "local" first."""
+    rows = db.execute(
+        select(Product.category, func.count())
+        .where(Product.deleted.is_(False))
+        .group_by(Product.category)
+        .order_by(case((Product.category == LOCAL, 0), else_=1), Product.category)
+    )
+    return [(category, count) for category, count in rows]
 
 
 def get_live_product(db: Session, product_id: str) -> Product:
@@ -107,6 +124,7 @@ def create_product(db: Session, data: ProductCreate) -> Product:
         brand=data.brand,
         rating=data.rating,
         notes=data.notes,
+        category=data.category,
         created_at=ts,
         updated_at=ts,
         deleted=False,

@@ -23,7 +23,7 @@ from app.schemas import (
 )
 
 ONE_MS = timedelta(milliseconds=1)
-PRODUCT_FIELDS = ("name", "brand", "rating", "notes")
+PRODUCT_FIELDS = ("name", "brand", "rating", "notes", "category")
 
 
 def utcnow() -> datetime:

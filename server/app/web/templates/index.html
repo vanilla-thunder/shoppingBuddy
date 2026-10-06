@@ -1,9 +1,18 @@
 {% extends "base.html" %}
 {% block content %}
-<form class="search" action="/" method="get" role="search">
+<form class="search" action="/" method="get" role="search"
+      hx-get="/products/rows" hx-trigger="input delay:250ms, search" hx-target="#results">
+  <select name="c" aria-label="Category">
+    <option value="" {% if not category %}selected{% endif %}>All categories</option>
+    {% for c, n in categories %}
+    <option value="{{ c }}" {% if c == category %}selected{% endif %}>{{ c }} ({{ n }})</option>
+    {% endfor %}
+    {% if category and category not in categories|map('first') %}
+    <option value="{{ category }}" selected>{{ category }} (0)</option>
+    {% endif %}
+  </select>
   <input type="search" name="q" value="{{ q }}" placeholder="Search name, brand or barcode"
-         aria-label="Search" autocomplete="off" autofocus
-         hx-get="/products/rows" hx-trigger="input changed delay:250ms, search" hx-target="#results">
+         aria-label="Search" autocomplete="off" autofocus>
 </form>
 <div id="results">{% include "_rows.html" %}</div>
 {% endblock %}

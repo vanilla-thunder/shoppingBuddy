@@ -54,6 +54,8 @@ class Product(Base):
     brand: Mapped[str | None] = mapped_column(String(200))
     rating: Mapped[int | None]
     notes: Mapped[str | None] = mapped_column(Text)
+    # "local" for things bought in a shop, otherwise the website domain, e.g. "lieferando.de".
+    category: Mapped[str] = mapped_column(String(100), default="local", server_default="local", index=True)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime)
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime)
     deleted: Mapped[bool] = mapped_column(default=False)

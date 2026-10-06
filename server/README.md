@@ -40,7 +40,8 @@ cp .env.example .env      # then set SB_API_TOKEN to a long random secret
 Server-rendered Jinja2 templates with [htmx](https://htmx.org) (bundled in `app/web/static`, no
 CDN needed). Pages:
 
-- **List and search:** live search by name, brand or barcode. Clicking a star sets the rating;
+- **List and search:** live search by name, brand or barcode, with a category filter
+  (`local`, `lieferando.de`, …) that is remembered per session. Clicking a star sets the rating;
   clicking the current star clears it. A search for an unknown barcode offers to add it.
 - **Add and edit:** product fields and a star rating. On the edit page you can add or remove
   barcodes and store article numbers.
@@ -53,7 +54,8 @@ Its key is derived from `SB_API_TOKEN`, so rotating the token logs out every bro
 
 | Method & path                         | Purpose                                   |
 |---------------------------------------|-------------------------------------------|
-| `GET /api/products?q=&limit=&offset=` | List and search by name, brand or barcode |
+| `GET /api/products?q=&category=&limit=&offset=` | List and search by name, brand or barcode, optionally in one category |
+| `GET /api/categories`                 | Categories in use, with product counts    |
 | `POST /api/products`                  | Create a product with its identifiers (409 if a barcode is taken) |
 | `GET/PATCH/DELETE /api/products/{id}` | Read, partially update, or delete (tombstone) a product |
 | `POST /api/products/{id}/identifiers` | Add a barcode or article number           |
