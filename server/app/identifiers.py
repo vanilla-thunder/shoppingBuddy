@@ -16,7 +16,7 @@ def normalize_identifier(type_: str, value: str, store: str | None) -> tuple[str
 
     GTINs (EAN-8, UPC-A, EAN-13, GTIN-14) are stored zero-padded to 14 digits, so a UPC-A
     and the EAN-13 a scanner reports for the same item compare equal. Store article numbers
-    are scoped to a store, matched case-insensitively.
+    are scoped to a store, lowercased (plain lower(), not casefold(), to match the Dart client).
     """
     value = value.strip()
     store = (store or "").strip()
@@ -33,5 +33,5 @@ def normalize_identifier(type_: str, value: str, store: str | None) -> tuple[str
             raise ValueError("article number must not be empty")
         if not store:
             raise ValueError("store article number needs a store")
-        return value, store.casefold()
+        return value, store.lower()
     raise ValueError(f"unknown identifier type {type_!r}")

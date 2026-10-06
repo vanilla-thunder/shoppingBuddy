@@ -27,7 +27,7 @@ Rules:
 
 - `gtin`: digits only, length 8/12/13/14, valid check digit, stored **zero-padded to 14 digits**.
   `store` must be empty. This makes a UPC-A and the EAN-13 form of the same code equal.
-- `store_article`: any non-empty value, `store` required and **casefolded** (`"ALDI"` → `"aldi"`).
+- `store_article`: any non-empty value, `store` required and **lowercased** (`"ALDI"` → `"aldi"`; plain lowercasing, so `ß` stays `ß`).
 - Leading and trailing whitespace is stripped from all fields.
 
 A live `(type, value, store)` combination is unique. Deleted identifiers don't count.

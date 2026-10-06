@@ -9,8 +9,10 @@ Status of shoppingBuddy. Update this file whenever a task is finished or a decis
 - [x] **2. Web UI**: Jinja2 + htmx, login, live search, star ratings, CSV import/export
 - [x] **Categories**: `local` or a website domain (e.g. `lieferando.de`), filter in API and web UI
 - [x] **Alembic migrations**: run automatically on server start
-- [ ] **3. Android app, offline only** (Flutter): barcode scanner (`mobile_scanner`), local
-      database (`drift`), lookup screen, add-product screen, category filter defaulting to `local`
+- [x] **3. Android app, offline only** (Flutter, `app/`): barcode scanner (`mobile_scanner`),
+      local database (`drift`), scan → rating card / add product, product list with search and a
+      category filter defaulting to `local`, edit/delete, extra barcodes. Runs on a real device;
+      scanning real products still to be confirmed by the owner
 - [ ] **4. Sync engine in the app**: push/pull as described in `docs/sync.md`, background sync,
       unsynced-changes badge
 - [ ] **5. Extras**: Open Food Facts name prefill for unknown barcodes
@@ -20,8 +22,8 @@ Status of shoppingBuddy. Update this file whenever a task is finished or a decis
 
 ## Next step
 
-Milestone 3: check that the Flutter SDK and the Android toolchain are installed, then scaffold
-`app/` (the Flutter project) next to `server/`.
+Milestone 4: the sync engine in the app (server URL and token in settings, push dirty rows,
+pull pages, apply rules from `docs/sync.md`).
 
 ## Open decisions
 
@@ -36,3 +38,4 @@ Milestone 3: check that the Flutter SDK and the Android toolchain are installed,
 - With SQLite, run a single uvicorn worker only.
 - Web login has no rate limiting, so the API token must be long and random.
 - Web search doesn't match store names in article numbers.
+- The app can add GTIN barcodes, but not yet store article numbers (the web UI can).

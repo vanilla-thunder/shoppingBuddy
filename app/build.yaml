@@ -1,0 +1,7 @@
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          # ISO-8601 text keeps millisecond precision, which last-write-wins comparisons need.
+          store_date_time_values_as_text: true
