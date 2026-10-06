@@ -21,22 +21,19 @@ Status of shoppingBuddy. Update this file whenever a task is finished or a decis
       app's Sync tab scans it (`SB_PUBLIC_URL` sets the URL behind a proxy)
 - [x] **5. Extras**: Open Food Facts name prefill for unknown barcodes (app only: the add form
       fills in name and brand, never overwriting typed text; offline or not found leaves it empty)
-- [ ] **6. Deployment**: Docker image, `docker-compose.yml` with labels for an existing Traefik,
-      `SB_SECURE_COOKIES=true`
+- [ ] **6. Deployment**: Docker image (`server/Dockerfile`), `docker-compose.yml` with labels for
+      the existing Traefik (network `web`, default entrypoints, settings in `.env`),
+      `SB_SECURE_COOKIES=true`, `SB_PUBLIC_URL`. Files written; not yet deployed to the host
 - [ ] **Later**: browser extension for lieferando.de (uses `GET /api/products?category=…`)
 
 ## Next step
 
-Milestone 6: deployment (Docker image, `docker-compose.yml` for the existing Traefik). Needs the
-open decisions below. Set `SB_PUBLIC_URL` to the public HTTPS address so the connect QR code
-points there. Until then, the phone syncs with a dev server through
-`adb reverse tcp:8000 tcp:8000` (WSL2 mirrored networking isn't available); debug builds allow
-plain HTTP for that.
+Deploy milestone 6 on the Traefik host (`server/README.md`, "Deployment"), check
+https://shopping.mb-dev.pro, then connect the phone by scanning the QR code from `/connect`.
 
 ## Open decisions
 
-- **Deployment:** the domain, the Traefik Docker network name, the HTTPS entrypoint name and the
-  certresolver name. All four are needed for milestone 6.
+- None at the moment.
 
 ## Known limitations
 

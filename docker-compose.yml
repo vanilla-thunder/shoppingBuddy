@@ -1,0 +1,28 @@
+# Runs the server behind an existing Traefik. Settings come from .env next to this file
+# (copy .env.example). Start with: docker compose up -d --build
+services:
+  shoppingbuddy:
+    build: ./server
+    image: shoppingbuddy:latest
+    restart: unless-stopped
+    environment:
+      SB_API_TOKEN: ${SB_API_TOKEN:?set SB_API_TOKEN in .env}
+      SB_PUBLIC_URL: https://${SB_DOMAIN:?set SB_DOMAIN in .env}
+      SB_SECURE_COOKIES: "true"
+    volumes:
+      - data:/data
+    networks:
+      - web
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=web
+      - traefik.http.routers.shoppingbuddy.rule=Host(`${SB_DOMAIN}`)
+      - traefik.http.routers.shoppingbuddy.tls.certresolver=${SB_CERTRESOLVER:?set SB_CERTRESOLVER in .env}
+      - traefik.http.services.shoppingbuddy.loadbalancer.server.port=8000
+
+volumes:
+  data:
+
+networks:
+  web:
+    external: true

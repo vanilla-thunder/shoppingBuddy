@@ -53,6 +53,29 @@ CDN needed). Pages:
 The login is a signed session cookie (30 days, SameSite=Lax), with an Origin check on form posts.
 Its key is derived from `SB_API_TOKEN`, so rotating the token logs out every browser.
 
+## Deployment (Docker + Traefik)
+
+`docker-compose.yml` in the repo root runs the server behind an existing Traefik: HTTPS router
+on the default entrypoints, certificate from the configured certresolver, external network
+`web`. On the host:
+
+```bash
+git clone https://github.com/vanilla-thunder/shoppingBuddy.git && cd shoppingBuddy
+cp .env.example .env    # set SB_DOMAIN, SB_CERTRESOLVER and a new SB_API_TOKEN
+docker compose up -d --build
+```
+
+The image runs as a non-root user with one uvicorn worker. Migrations run on start. The SQLite
+database is in the `data` volume (`/data/shoppingbuddy.db`), so back that up. For example, this
+makes a consistent copy while the server runs:
+
+```bash
+docker compose exec shoppingbuddy python -c "import sqlite3; s=sqlite3.connect('/data/shoppingbuddy.db'); d=sqlite3.connect('/data/backup.db'); s.backup(d)"
+docker compose cp shoppingbuddy:/data/backup.db ./shoppingbuddy-backup.db
+```
+
+To update: `git pull && docker compose up -d --build`.
+
 ## Schema changes
 
 After changing `app/models.py`, generate a migration and review it before committing:
