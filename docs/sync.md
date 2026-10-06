@@ -44,6 +44,18 @@ Sync always transfers **every** category. Clients filter locally: the phone app 
 `local`, so a scan in the supermarket only matches groceries, and you can switch categories while
 offline.
 
+## Connecting a device
+
+The web UI page `/connect` shows a QR code with the server URL and the API token:
+
+```
+shoppingbuddy://connect?url=<server URL, percent-encoded>&token=<token, percent-encoded>
+```
+
+The URL is `SB_PUBLIC_URL` if set, otherwise the address the browser used. Clients accept only
+`http`/`https` URLs and a non-empty token. Switching to a different server URL resets the
+client's `last_seq` to 0, so it pulls everything from the new server.
+
 ## Push: `POST /sync/push`
 
 ```json

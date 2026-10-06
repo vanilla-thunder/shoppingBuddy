@@ -89,6 +89,8 @@ legend { font-weight: 600; font-size: 0.95rem; padding: 0; }
   padding: 16px; margin-bottom: 16px;
 }
 .card.narrow { max-width: 380px; margin: 40px auto; }
+/* White behind the QR code, also in dark mode, so phone cameras can read it. */
+.qr svg { display: block; background: #fff; max-width: 100%; height: auto; }
 .actions { display: flex; align-items: center; gap: 16px; }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .errors {

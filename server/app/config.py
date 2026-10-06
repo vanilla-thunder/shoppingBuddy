@@ -17,6 +17,9 @@ class Settings(DatabaseSettings):
     api_token: str = Field(min_length=16)
     # Mark the web session cookie Secure; enable when served over HTTPS.
     secure_cookies: bool = False
+    # Server address put into the phone's connect QR code. Defaults to the address the
+    # browser used, which is wrong behind a proxy that doesn't forward the original host.
+    public_url: str | None = None
 
     @property
     def session_secret(self) -> str:

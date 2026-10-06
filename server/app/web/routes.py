@@ -2,6 +2,8 @@ from datetime import date
 from pathlib import Path
 from urllib.parse import urlencode
 
+import segno
+
 from fastapi import APIRouter, Depends, Form, Request, UploadFile, status
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
@@ -118,6 +120,25 @@ def login(request: Request, token: str = Form(...), next: str = Form("/")):
 def logout(request: Request):
     request.session.clear()
     return see_other("/login")
+
+
+# --- connect the phone app ---
+
+
+def connect_uri(server_url: str, token: str) -> str:
+    """Payload of the connect QR code; the app parses it (docs/sync.md, "Connecting a device")."""
+    return "shoppingbuddy://connect?" + urlencode({"url": server_url, "token": token})
+
+
+@router.get("/connect")
+def connect(request: Request):
+    settings = request.app.state.settings
+    server_url = (settings.public_url or str(request.base_url)).rstrip("/")
+    qr = segno.make(connect_uri(server_url, settings.api_token), error="m").svg_inline(scale=6, border=2)
+    response = render(request, "connect.html", server_url=server_url, qr=qr)
+    # The QR code contains the token: keep it out of browser and proxy caches.
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 # --- list & search ---

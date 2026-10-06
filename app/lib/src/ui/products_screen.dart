@@ -52,23 +52,31 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 builder: (context, snapshot) {
                   final products = snapshot.data;
                   if (products == null) return const SizedBox.shrink();
-                  if (products.isEmpty) {
-                    return Center(
-                      child: Text(
-                        _query.isEmpty ? 'No products${category == null ? '' : ' in $category'} yet' : 'Nothing found',
-                      ),
-                    );
-                  }
-                  return ListView.separated(
-                    padding: const EdgeInsets.only(bottom: 88),
-                    itemCount: products.length,
-                    separatorBuilder: (_, _) => const Divider(height: 1),
-                    itemBuilder: (context, i) => _ProductTile(
-                      product: products[i],
-                      showCategory: category == null,
-                      onTap: () => _open(context, productId: products[i].id),
-                      onRating: (r) => scope.repo.setRating(products[i].id, r),
-                    ),
+                  // Pull-to-refresh syncs with the server.
+                  return RefreshIndicator(
+                    onRefresh: scope.sync.syncNow,
+                    child: products.isEmpty
+                        ? ListView(children: [
+                            const SizedBox(height: 120),
+                            Center(
+                              child: Text(
+                                _query.isEmpty
+                                    ? 'No products${category == null ? '' : ' in $category'} yet'
+                                    : 'Nothing found',
+                              ),
+                            ),
+                          ])
+                        : ListView.separated(
+                            padding: const EdgeInsets.only(bottom: 88),
+                            itemCount: products.length,
+                            separatorBuilder: (_, _) => const Divider(height: 1),
+                            itemBuilder: (context, i) => _ProductTile(
+                              product: products[i],
+                              showCategory: category == null,
+                              onTap: () => _open(context, productId: products[i].id),
+                              onRating: (r) => scope.repo.setRating(products[i].id, r),
+                            ),
+                          ),
                   );
                 },
               ),

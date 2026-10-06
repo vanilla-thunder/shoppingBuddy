@@ -18,7 +18,9 @@ cp .env.example .env      # then set SB_API_TOKEN to a long random secret
 .venv/bin/uvicorn app.main:create_app --factory --reload
 ```
 
-- Web UI: http://localhost:8000/ (log in with the API token)
+- Web UI: http://localhost:8000/ (log in with the API token; generate one with
+  `python3 -c "import secrets; print(secrets.token_urlsafe(32))"`)
+- Connect the phone app: open "Connect phone" in the web UI and scan the QR code in the app
 - API docs: http://localhost:8000/docs (click "Authorize" and enter the token)
 
 ## Test
@@ -34,6 +36,7 @@ cp .env.example .env      # then set SB_API_TOKEN to a long random secret
 | `SB_API_TOKEN`    | — (required, ≥16 characters)    | Bearer token for every `/api` and `/sync` call |
 | `SB_DATABASE_URL` | `sqlite:///./shoppingbuddy.db`  | Any SQLAlchemy URL; Postgres also works |
 | `SB_SECURE_COOKIES` | `false`                       | Set to `true` when served over HTTPS     |
+| `SB_PUBLIC_URL`   | address the browser used        | Server URL in the phone's connect QR code (`/connect`); set it behind a reverse proxy |
 
 ## Web UI
 

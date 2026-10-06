@@ -177,3 +177,22 @@ def test_upc_and_ean8_display_in_printed_length(web):
     page = web.get("/").text
     assert ">036000291452<" in page
     assert f">{EAN8}<" in page
+
+
+def test_connect_page_shows_qr_code_with_server_and_token(client, web):
+    resp = web.get("/connect")
+    assert resp.status_code == 200
+    assert resp.headers["Cache-Control"] == "no-store"
+    assert "<svg" in resp.text
+    assert "<code>http://testserver</code>" in resp.text
+    assert TestClient(client.app, follow_redirects=False).get("/connect").status_code == 303
+
+
+def test_connect_uri_and_public_url(client, web):
+    from app.web.routes import connect_uri
+
+    assert connect_uri("https://buddy.example.org/sb", "a b&c") == (
+        "shoppingbuddy://connect?url=https%3A%2F%2Fbuddy.example.org%2Fsb&token=a+b%26c"
+    )
+    client.app.state.settings.public_url = "https://buddy.example.org/"
+    assert "<code>https://buddy.example.org</code>" in web.get("/connect").text

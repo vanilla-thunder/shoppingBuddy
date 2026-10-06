@@ -7,8 +7,10 @@ import 'package:shopping_buddy/src/data/database.dart';
 import 'package:shopping_buddy/src/data/repository.dart';
 import 'package:shopping_buddy/src/domain/identifiers.dart';
 import 'package:shopping_buddy/src/product_info.dart';
+import 'package:shopping_buddy/src/sync/sync_controller.dart';
 import 'package:shopping_buddy/src/ui/products_screen.dart';
 import 'package:shopping_buddy/src/ui/scan_screen.dart';
+import 'package:shopping_buddy/src/ui/sync_screen.dart';
 
 const milkCode = '4006381333931';
 
@@ -28,6 +30,7 @@ void main() {
   late ProductRepository repo;
   late CategoryFilter filter;
   late FakeProductInfo productInfo;
+  late SyncController sync;
   late void Function(String raw, {bool isUpcE}) scan;
 
   setUp(() async {
@@ -35,12 +38,19 @@ void main() {
     repo = ProductRepository(db);
     filter = await CategoryFilter.load(repo);
     productInfo = FakeProductInfo();
+    sync = await SyncController.load(repo); // not configured: never contacts a server
   });
 
   tearDown(() => db.close());
 
   Future<void> pumpApp(WidgetTester tester, Widget home) async {
-    await tester.pumpWidget(AppScope(repo: repo, categoryFilter: filter, productInfo: productInfo, child: ShoppingBuddyApp(home: home)));
+    await tester.pumpWidget(AppScope(
+      repo: repo,
+      categoryFilter: filter,
+      productInfo: productInfo,
+      sync: sync,
+      child: ShoppingBuddyApp(home: home),
+    ));
     await tester.pumpAndSettle();
   }
 
@@ -126,6 +136,19 @@ void main() {
     expect(find.textContaining('check digit'), findsOneWidget);
     await scanCode(tester, '04252614', isUpcE: true);
     expect(find.text('042100005264'), findsOneWidget); // shown as its UPC-A form
+    await unmount(tester);
+  });
+
+  testWidgets('sync screen shows unsynced changes and saves the server settings', (tester) async {
+    await tester.runAsync(() => repo.createProduct(ProductDraft(name: 'Vollmilch'), [normalizeGtin(milkCode)]));
+    await pumpApp(tester, const SyncScreen());
+    expect(find.text('2 unsynced changes'), findsOneWidget);
+    expect(find.text('Enter the server URL and token to sync.'), findsOneWidget);
+
+    await tester.enterText(find.widgetWithText(TextFormField, 'Server URL'), 'not a url');
+    await tester.tap(find.text('Save and sync'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Enter a URL'), findsOneWidget);
     await unmount(tester);
   });
 

@@ -114,7 +114,10 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         final gtin = _gtin.text.trim();
         await repo.createProduct(draft, [if (gtin.isNotEmpty) normalizeGtin(gtin)]);
       } else {
-        await repo.updateProduct(widget.productId!, draft);
+        // Re-resolved, in case a sync merged this product into another while the form was open.
+        final current = await repo.getProduct(_product!.id);
+        if (current == null) throw StateError('product no longer exists');
+        await repo.updateProduct(current.id, draft);
       }
       if (mounted) Navigator.of(context).pop();
     } on IdentifierTaken catch (e) {
@@ -144,7 +147,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    await AppScope.of(context).repo.deleteProduct(widget.productId!);
+    await AppScope.of(context).repo.deleteProduct(_product!.id);
     if (mounted) Navigator.of(context).pop();
   }
 
@@ -153,20 +156,20 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     final code = await showDialog<String>(context: context, builder: (_) => const _BarcodeDialog());
     if (code == null || !mounted) return;
     try {
-      await repo.addIdentifier(widget.productId!, normalizeGtin(code));
+      await repo.addIdentifier(_product!.id, normalizeGtin(code));
     } on IdentifierTaken catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${e.identifier} belongs to another product')));
       }
     }
-    final product = await repo.getProduct(widget.productId!);
+    final product = await repo.getProduct(_product!.id);
     if (mounted) setState(() => _product = product);
   }
 
   Future<void> _removeBarcode(NormalizedIdentifier ident) async {
     final repo = AppScope.of(context).repo;
-    await repo.removeIdentifier(widget.productId!, ident);
-    final product = await repo.getProduct(widget.productId!);
+    await repo.removeIdentifier(_product!.id, ident);
+    final product = await repo.getProduct(_product!.id);
     if (mounted) setState(() => _product = product);
   }
 

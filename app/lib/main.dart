@@ -4,17 +4,21 @@ import 'src/app_scope.dart';
 import 'src/data/database.dart';
 import 'src/data/repository.dart';
 import 'src/product_info.dart';
+import 'src/sync/sync_controller.dart';
 import 'src/ui/products_screen.dart';
 import 'src/ui/scan_screen.dart';
+import 'src/ui/sync_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final repo = ProductRepository(AppDatabase());
   final categoryFilter = await CategoryFilter.load(repo);
+  final sync = await SyncController.load(repo)..start();
   runApp(AppScope(
     repo: repo,
     categoryFilter: categoryFilter,
     productInfo: OpenFoodFactsLookup(),
+    sync: sync,
     child: const ShoppingBuddyApp(),
   ));
 }
@@ -53,14 +57,25 @@ class _HomeShellState extends State<HomeShell> {
     return Scaffold(
       body: switch (_tab) {
         0 => const ScanScreen(),
-        _ => const ProductsScreen(),
+        1 => const ProductsScreen(),
+        _ => const SyncScreen(),
       },
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tab,
         onDestinationSelected: (i) => setState(() => _tab = i),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.qr_code_scanner), label: 'Scan'),
-          NavigationDestination(icon: Icon(Icons.list_alt), label: 'Products'),
+        destinations: [
+          const NavigationDestination(icon: Icon(Icons.qr_code_scanner), label: 'Scan'),
+          const NavigationDestination(icon: Icon(Icons.list_alt), label: 'Products'),
+          NavigationDestination(
+            icon: StreamBuilder<int>(
+              stream: AppScope.of(context).sync.unsynced,
+              builder: (context, snapshot) {
+                final count = snapshot.data ?? 0;
+                return Badge(label: Text('$count'), isLabelVisible: count > 0, child: const Icon(Icons.cloud_sync_outlined));
+              },
+            ),
+            label: 'Sync',
+          ),
         ],
       ),
     );

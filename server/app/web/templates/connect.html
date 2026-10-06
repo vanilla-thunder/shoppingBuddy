@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Connect phone · shoppingBuddy{% endblock %}
+{% block content %}
+<h1>Connect phone</h1>
+<div class="card">
+  <p>In the app, open <b>Sync</b>, tap <b>Scan QR code</b> and point the camera at this code.
+    It contains the server address and the API token.</p>
+  <div class="qr">{{ qr|safe }}</div>
+  <p>Server: <code>{{ server_url }}</code></p>
+  <p class="muted">Anyone who scans this code gets full access. Don't show it in public.
+    If the address is wrong (e.g. behind a reverse proxy), set <code>SB_PUBLIC_URL</code>.</p>
+</div>
+{% endblock %}

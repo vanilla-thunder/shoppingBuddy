@@ -96,11 +96,25 @@ class ProductRepository {
 
   Stream<Product?> watchProduct(String id) => _watchBoth(() => getProduct(id));
 
+  /// The live product [id], or the product it was merged into by the server, so open screens
+  /// follow a merge (docs/sync.md).
   Future<Product?> getProduct(String id) async {
-    final row = await (db.select(db.products)..where((p) => p.id.equals(id) & p.deleted.equals(false)))
-        .getSingleOrNull();
-    return row == null ? null : (await _withIdentifiers([row])).single;
+    var row = await (db.select(db.products)..where((p) => p.id.equals(id))).getSingleOrNull();
+    while (row != null && row.deleted && row.mergedInto != null) {
+      final target = row.mergedInto!;
+      row = await (db.select(db.products)..where((p) => p.id.equals(target))).getSingleOrNull();
+    }
+    return (row == null || row.deleted) ? null : (await _withIdentifiers([row])).single;
   }
+
+  /// Number of products and identifiers changed here and not yet pushed.
+  Stream<int> watchUnsyncedCount() => _watchBoth(() async {
+        final products = db.products.id.count(filter: db.products.dirty.equals(true));
+        final identifiers = db.identifiers.id.count(filter: db.identifiers.dirty.equals(true));
+        final p = await (db.selectOnly(db.products)..addColumns([products])).getSingle();
+        final i = await (db.selectOnly(db.identifiers)..addColumns([identifiers])).getSingle();
+        return p.read(products)! + i.read(identifiers)!;
+      });
 
   /// Finds the live product carrying [ident], following merges done by the server.
   Future<Product?> lookup(NormalizedIdentifier ident) async {
