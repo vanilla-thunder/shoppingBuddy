@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<form class="search" action="/" method="get" role="search">
+  <input type="search" name="q" value="{{ q }}" placeholder="Search name, brand or barcode"
+         aria-label="Search" autocomplete="off" autofocus
+         hx-get="/products/rows" hx-trigger="input changed delay:250ms, search" hx-target="#results">
+</form>
+<div id="results">{% include "_rows.html" %}</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+<article class="product" id="p-{{ p.id }}">
+  <div class="product-main">
+    <a class="product-name" href="/products/{{ p.id }}">{{ p.name }}</a>
+    {% if p.brand %}<span class="muted">{{ p.brand }}</span>{% endif %}
+    <div class="codes">{% for i in p.identifiers if not i.deleted %}<code>{{ i|code }}</code>{% endfor %}</div>
+  </div>
+  <div class="stars" role="group" aria-label="Rating">
+    {% for n in range(1, 6) %}
+    <button type="button" class="star{% if p.rating and n <= p.rating %} on{% endif %}"
+            name="rating" value="{{ n }}" hx-post="/products/{{ p.id }}/rating"
+            hx-target="#p-{{ p.id }}" hx-swap="outerHTML"
+            aria-label="{{ n }} of 5" aria-pressed="{{ 'true' if p.rating == n else 'false' }}">★</button>
+    {% endfor %}
+  </div>
+</article>

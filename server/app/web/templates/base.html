@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}shoppingBuddy{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css?v={{ version }}">
+  <script src="/static/htmx.min.js?v={{ version }}" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">shopping<b>Buddy</b></a>
+    {% if authed %}
+    <nav>
+      <a class="button small" href="/products/new">+ Add</a>
+      <a href="/import">Import</a>
+      <a href="/export.csv">Export</a>
+      <form method="post" action="/logout"><button class="link">Log out</button></form>
+    </nav>
+    {% endif %}
+  </header>
+  <main>{% block content %}{% endblock %}</main>
+</body>
+</html>

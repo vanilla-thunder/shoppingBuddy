@@ -1,0 +1,19 @@
+{% for p in products %}{% include "_row.html" %}{% endfor %}
+{% if next_offset %}
+<button class="more" hx-get="/products/rows?{{ {'q': q, 'offset': next_offset}|urlencode }}" hx-swap="outerHTML">Load more</button>
+{% endif %}
+{% if not products and offset == 0 %}
+<div class="empty">
+  {% if q %}
+  <p>Nothing found for “{{ q }}”.</p>
+  {% if barcode_query %}
+  <a class="button" href="/products/new?{{ {'gtin': q}|urlencode }}">Add product with barcode {{ q }}</a>
+  {% else %}
+  <a class="button" href="/products/new?{{ {'name': q}|urlencode }}">Add “{{ q }}”</a>
+  {% endif %}
+  {% else %}
+  <p>No products yet.</p>
+  <a class="button" href="/products/new">Add your first product</a>
+  {% endif %}
+</div>
+{% endif %}

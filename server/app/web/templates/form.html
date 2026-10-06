@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}{{ product.name if product else "New product" }} · shoppingBuddy{% endblock %}
+{% block content %}
+<h1>{{ "Edit product" if product else "New product" }}</h1>
+{% if errors %}
+<div class="errors" role="alert">
+  <ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>
+  {% if taken_id %}<a href="/products/{{ taken_id }}">Open the product that has it</a>{% endif %}
+</div>
+{% endif %}
+
+<form class="card" method="post" action="{{ '/products/' ~ product.id if product else '/products/new' }}">
+  <label>Name
+    <input name="name" value="{{ form.name }}" required maxlength="300" {% if not product %}autofocus{% endif %}>
+  </label>
+  <label>Brand <input name="brand" value="{{ form.brand }}" maxlength="200"></label>
+  <fieldset>
+    <legend>Rating</legend>
+    <div class="star-radios">
+      {% for n in range(5, 0, -1) %}
+      <input type="radio" id="r{{ n }}" name="rating" value="{{ n }}" {% if form.rating == n|string %}checked{% endif %}>
+      <label for="r{{ n }}" title="{{ n }} of 5">★</label>
+      {% endfor %}
+    </div>
+    <label class="inline"><input type="radio" name="rating" value="" {% if not form.rating %}checked{% endif %}> no rating</label>
+  </fieldset>
+  <label>Notes <textarea name="notes" rows="3" maxlength="2000">{{ form.notes }}</textarea></label>
+  {% if not product %}
+  <label>Barcode (EAN / GTIN)
+    <input name="gtin" value="{{ form.gtin }}" inputmode="numeric" autocomplete="off">
+  </label>
+  <div class="row2">
+    <label>Store <input name="store" value="{{ form.store }}" placeholder="e.g. Aldi"></label>
+    <label>Article number <input name="article" value="{{ form.article }}"></label>
+  </div>
+  {% endif %}
+  <div class="actions">
+    <button type="submit">Save</button>
+    <a href="/">Cancel</a>
+  </div>
+</form>
+
+{% if product %}
+{% set ident_form = ident_form|default({'type': 'gtin', 'value': '', 'store': ''}) %}
+<section class="card">
+  <h2>Barcodes &amp; article numbers</h2>
+  <ul class="idents">
+    {% for i in product.identifiers if not i.deleted %}
+    <li>
+      <code>{{ i|code }}</code>
+      <span class="muted">{{ "GTIN" if i.type == "gtin" else "article no." }}</span>
+      <form method="post" action="/identifiers/{{ i.id }}/delete"><button class="link danger">Remove</button></form>
+    </li>
+    {% else %}
+    <li class="muted">None yet.</li>
+    {% endfor %}
+  </ul>
+  <form class="add-ident" method="post" action="/products/{{ product.id }}/identifiers">
+    <select name="type" aria-label="Type">
+      <option value="gtin" {% if ident_form.type == 'gtin' %}selected{% endif %}>GTIN / EAN</option>
+      <option value="store_article" {% if ident_form.type == 'store_article' %}selected{% endif %}>Article no.</option>
+    </select>
+    <input name="value" value="{{ ident_form.value }}" placeholder="Code" required aria-label="Code">
+    <input name="store" value="{{ ident_form.store }}" placeholder="Store (article no. only)" aria-label="Store">
+    <button type="submit">Add</button>
+  </form>
+</section>
+<form method="post" action="/products/{{ product.id }}/delete" onsubmit="return confirm('Delete this product?')">
+  <button class="danger">Delete product</button>
+</form>
+{% endif %}
+{% endblock %}

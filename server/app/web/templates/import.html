@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Import · shoppingBuddy{% endblock %}
+{% block content %}
+<h1>Import CSV</h1>
+<div class="card">
+  <p>Columns: <code>name</code> (required), <code>brand</code>, <code>rating</code> (1–5), <code>notes</code>,
+    <code>gtins</code> (several separated by <code>;</code>), <code>store_articles</code>
+    (<code>store=number</code>, separated by <code>;</code>), <code>id</code>.
+    Comma, semicolon or tab separated, UTF-8.</p>
+  <p class="muted">Rows that match an existing product by <code>id</code> or barcode update it, and empty cells leave
+    fields unchanged. All other rows create new products. The <a href="/export.csv">export</a> uses the same format.</p>
+  {% if error %}<div class="errors" role="alert">{{ error }}</div>{% endif %}
+  <form method="post" action="/import" enctype="multipart/form-data" class="add-ident">
+    <input type="file" name="file" accept=".csv,text/csv" required aria-label="CSV file">
+    <button type="submit">Import</button>
+  </form>
+</div>
+{% if report %}
+<div class="card">
+  <h2>Result</h2>
+  <p>{{ report.created }} created · {{ report.updated }} updated · {{ report.unchanged }} unchanged · {{ report.errors|length }} errors</p>
+  {% if report.errors %}
+  <ul class="errors">{% for line, msg in report.errors %}<li>Line {{ line }}: {{ msg }}</li>{% endfor %}</ul>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}
